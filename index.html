@@ -20,18 +20,19 @@
         }
         
         .msg b { color: #128c7e; font-size: 0.8rem; display: block; margin-bottom: 5px; }
-        .del-btn { position: absolute; top: 5px; right: 8px; color: #ccc; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .del-btn { position: absolute; top: 5px; right: 8px; color: #ccc; cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
         .del-btn:hover { color: #ff5e5e; }
         
         img, video { max-width: 100%; border-radius: 5px; margin-top: 10px; display: block; }
         audio { width: 100%; margin-top: 10px; }
 
-        .input-area { padding: 15px; background: #f0f0f0; display: flex; flex-direction: column; gap: 10px; }
+        .input-area { padding: 15px; background: #f0f0f0; display: flex; flex-direction: column; gap: 8px; }
         .controls { display: flex; gap: 5px; align-items: center; }
         input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
         
+        #char-count { font-size: 0.7rem; color: #666; text-align: right; margin-right: 5px; }
         .icon-btn { background: #ddd; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-size: 1.2rem; }
-        #sendBtn { background: #25d366; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        #sendBtn { background: #25d366; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         #recordBtn.recording { background: #ff5e5e; color: white; animation: blink 1s infinite; }
         
         @keyframes blink { 50% { opacity: 0.5; } }
@@ -45,13 +46,14 @@
         <div id="messages"></div>
         
         <div class="input-area">
-            <input type="text" id="username" placeholder="Your Name">
+            <input type="text" id="username" placeholder="Your Name" style="width: 120px;">
             <div class="controls">
-                <input type="text" id="messageInput" placeholder="Type a message...">
-                <button class="icon-btn" title="Upload" onclick="document.getElementById('fileInput').click()">📁</button>
-                <button class="icon-btn" id="recordBtn" title="Record Audio">🎤</button>
+                <input type="text" id="messageInput" placeholder="Type a message..." maxlength="1000">
+                <button class="icon-btn" onclick="document.getElementById('fileInput').click()">📁</button>
+                <button class="icon-btn" id="recordBtn">🎤</button>
                 <input type="file" id="fileInput" accept="image/*,video/*,audio/*">
             </div>
+            <div id="char-count">Characters: 0 / 1000</div>
             <button id="sendBtn">SEND</button>
         </div>
     </div>
@@ -60,7 +62,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-        // --- PASTE YOUR CONFIG BELOW ---
                 const firebaseConfig = {
     apiKey: "AIzaSyChr_GE15lWWlcgTfqPKVfQTbKkhQjxkM4",
     authDomain: "classchat-11a6a.firebaseapp.com",
@@ -77,9 +78,18 @@
         const db = firebase.database();
 
         const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const charCountDisplay = document.getElementById('char-count');
         const recordBtn = document.getElementById('recordBtn');
         let mediaRecorder;
         let audioChunks = [];
+
+        // --- CHARACTER COUNTER ---
+        messageInput.oninput = () => {
+            const length = messageInput.value.length;
+            charCountDisplay.innerText = `Characters: ${length} / 1000`;
+            charCountDisplay.style.color = length >= 1000 ? "red" : "#666";
+        };
 
         function send(data) {
             const name = document.getElementById('username').value || "Guest";
@@ -87,8 +97,11 @@
         }
 
         document.getElementById('sendBtn').onclick = () => {
-            const input = document.getElementById('messageInput');
-            if(input.value) { send({ text: input.value }); input.value = ""; }
+            if(messageInput.value) { 
+                send({ text: messageInput.value }); 
+                messageInput.value = ""; 
+                charCountDisplay.innerText = "Characters: 0 / 1000";
+            }
         };
 
         document.getElementById('fileInput').onchange = function(e) {
@@ -112,7 +125,6 @@
                 mediaRecorder = new MediaRecorder(stream);
                 mediaRecorder.start();
                 recordBtn.classList.add('recording');
-                
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
@@ -121,16 +133,16 @@
                     reader.readAsDataURL(audioBlob);
                     audioChunks = [];
                 };
-            } catch (err) { alert("Microphone access denied!"); }
+            } catch (err) { alert("Mic denied!"); }
         };
 
-        // --- RENDER MESSAGES ---
+        // --- RENDER & SPECIFIC DELETE ---
         db.ref("chats").on("child_added", (snapshot) => {
             const data = snapshot.val();
             const id = snapshot.key;
             const msg = document.createElement('div');
             msg.className = "msg";
-            msg.id = "msg-" + id; // Give each message an ID
+            msg.id = "msg-" + id;
             
             let content = `<span class="del-btn" onclick="firebase.database().ref('chats/${id}').remove()">×</span>`;
             content += `<b>${data.username}</b>`;
@@ -145,11 +157,9 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
 
-        // --- HANDLE REAL-TIME DELETION ---
         db.ref("chats").on("child_removed", (snapshot) => {
-            const id = snapshot.key;
-            const element = document.getElementById("msg-" + id);
-            if (element) element.remove(); // Only remove that specific message
+            const element = document.getElementById("msg-" + snapshot.key);
+            if (element) element.remove();
         });
     </script>
 </body>

@@ -3,30 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Chat Project</title>
+    <title>Pro Class Chat</title>
     <style>
-        /* CSS: Makes it look like a messaging app */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        #chat-card { width: 100%; max-width: 400px; height: 600px; background: white; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
-        header { background: #075e54; color: white; padding: 15px; text-align: center; font-weight: bold; }
-        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
-        .msg { background: white; padding: 8px 12px; border-radius: 8px; width: fit-content; max-width: 80%; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height: 1.4; }
-        .msg b { color: #128c7e; display: block; font-size: 0.8rem; margin-bottom: 2px; }
-        .input-area { padding: 15px; background: #f0f0f0; display: flex; flex-direction: column; gap: 8px; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
-        button { padding: 12px; background: #25d366; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        button:hover { background: #128c7e; }
+        body { font-family: sans-serif; background-color: #dfd3c3; display: flex; justify-content: center; padding: 20px; }
+        #chat-card { width: 100%; max-width: 500px; height: 80vh; background: white; display: flex; flex-direction: column; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); overflow: hidden; }
+        header { background: #075e54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        #messages { flex: 1; padding: 15px; overflow-y: auto; background: #e5ddd5; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Message Styling */
+        .msg { background: white; padding: 10px; border-radius: 10px; position: relative; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .msg b { color: #128c7e; font-size: 0.8rem; display: block; }
+        .del-btn { color: #ff5e5e; cursor: pointer; float: right; margin-left: 10px; font-weight: bold; }
+        
+        /* Media Styling */
+        img { max-width: 100%; border-radius: 5px; margin-top: 5px; }
+        video { max-width: 100%; border-radius: 5px; }
+        iframe { width: 100%; height: 200px; border: none; border-radius: 5px; }
+
+        .input-area { padding: 15px; background: #f0f0f0; display: flex; flex-direction: column; gap: 10px; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-group { display: flex; gap: 5px; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #sendBtn { background: #25d366; color: white; }
+        #clearBtn { background: #ff5e5e; color: white; flex: 0.3; }
     </style>
 </head>
 <body>
 
     <div id="chat-card">
-        <header>Classroom Real-Time Chat</header>
+        <header>
+            <span>Class Chat Pro</span>
+            <button id="clearBtn" onclick="clearChat()">Clear All</button>
+        </header>
         <div id="messages"></div>
         <div class="input-area">
             <input type="text" id="username" placeholder="Your Name">
-            <input type="text" id="messageInput" placeholder="Type a message...">
-            <button id="sendBtn">Send Message</button>
+            <input type="text" id="messageInput" placeholder="Message or Media Link (img, mp3, youtube)">
+            <button id="sendBtn">Send</button>
         </div>
     </div>
 
@@ -34,62 +47,79 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-        // PASTE YOUR CONFIG FROM FIREBASE HERE
-        const firebaseConfig = {
-    apiKey: "AIzaSyChr_GE15lWWlcgTfqPKVfQTbKkhQjxkM4",
-    authDomain: "classchat-11a6a.firebaseapp.com",
+                const firebaseConfig = {
+            apiKey: "AIzaSyChr_GE15lWWlcgTfqPKVfQTbKkhQjxkM4",
+            authDomain: "classchat-11a6a.firebaseapp.com",
   // THIS LINE BELOW IS THE MOST IMPORTANT ONE:
-    databaseURL: "https://classchat-11a6a-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "classchat-11a6a",
-    storageBucket: "classchat-11a6a.firebasestorage.app",
-    messagingSenderId: "888000836038",
-    appId: "1:888000836038:web:871885f36d337f1cd282c7",
-    measurementId: "G-RY8WWRMW4N"
+            databaseURL: "https://classchat-11a6a-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "classchat-11a6a",
+            storageBucket: "classchat-11a6a.firebasestorage.app",
+            messagingSenderId: "888000836038",
+            appId: "1:888000836038:web:871885f36d337f1cd282c7",
+            measurementId: "G-RY8WWRMW4N"
 };
 
-        // Initialize Firebase
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const sendBtn = document.getElementById('sendBtn');
-        const messageInput = document.getElementById('messageInput');
-        const userBox = document.getElementById('username');
-        const messagesDiv = document.getElementById('messages');
+        // Notification Sound
+        const popSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 
-        // Function to send message to Firebase
         function sendMessage() {
-            const name = userBox.value.trim();
-            const text = messageInput.value.trim();
-
-            if(name !== "" && text !== "") {
-                db.ref("chats").push().set({
-                    username: name,
-                    message: text
-                });
-                messageInput.value = ""; // Clear input
-            } else {
-                alert("Enter your name and a message!");
+            const name = document.getElementById('username').value;
+            const content = document.getElementById('messageInput').value;
+            if(name && content) {
+                db.ref("chats").push().set({ username: name, content: content });
+                document.getElementById('messageInput').value = "";
             }
         }
 
-        // Send when button is clicked
-        sendBtn.onclick = sendMessage;
+        document.getElementById('sendBtn').onclick = sendMessage;
 
-        // Send when Enter key is pressed
-        messageInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendMessage();
-        });
+        // Clear All Function
+        function clearChat() {
+            if(confirm("Delete ALL messages forever?")) {
+                db.ref("chats").remove();
+                location.reload();
+            }
+        }
 
-        // LISTEN FOR NEW MESSAGES
+        // Delete Single Message Function
+        function deleteMsg(id) {
+            db.ref("chats/" + id).remove();
+            location.reload();
+        }
+
+        // The Smart Listener
         db.ref("chats").on("child_added", (snapshot) => {
             const data = snapshot.val();
-            const msgEl = document.createElement('div');
-            msgEl.classList.add('msg');
-            msgEl.innerHTML = `<b>${data.username}</b>${data.message}`;
-            messagesDiv.appendChild(msgEl);
+            const id = snapshot.key;
+            const msgDiv = document.createElement('div');
+            msgDiv.className = "msg";
             
-            // Auto-scroll to bottom
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            let html = `<span class="del-btn" onclick="deleteMsg('${id}')">×</span>`;
+            html += `<b>${data.username}</b>`;
+
+            // Detect Media Type
+            const link = data.content;
+            if (link.includes("youtube.com/watch?v=")) {
+                const vidId = link.split("v=")[1].split("&")[0];
+                html += `<iframe src="https://www.youtube.com/embed/${vidId}"></iframe>`;
+            } else if (link.match(/\.(jpeg|jpg|gif|png)$/) != null) {
+                html += `<img src="${link}">`;
+            } else if (link.match(/\.(mp3|wav|ogg)$/) != null) {
+                html += `<audio controls src="${link}"></audio>`;
+            } else if (link.match(/\.(mp4|webm)$/) != null) {
+                html += `<video controls src="${link}"></video>`;
+            } else {
+                html += `<span>${data.content}</span>`;
+            }
+
+            msgDiv.innerHTML = html;
+            document.getElementById('messages').appendChild(msgDiv);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            popSound.play(); // Play sound for new messages
         });
     </script>
 </body>

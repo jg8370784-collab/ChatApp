@@ -3,43 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Class Chat</title>
+    <title>Ultimate Class Chat</title>
     <style>
-        body { font-family: sans-serif; background-color: #dfd3c3; display: flex; justify-content: center; padding: 20px; }
-        #chat-card { width: 100%; max-width: 500px; height: 80vh; background: white; display: flex; flex-direction: column; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); overflow: hidden; }
+        body { font-family: sans-serif; background-color: #dfd3c3; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        #chat-card { width: 100%; max-width: 500px; height: 90vh; background: white; display: flex; flex-direction: column; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); overflow: hidden; }
         header { background: #075e54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         #messages { flex: 1; padding: 15px; overflow-y: auto; background: #e5ddd5; display: flex; flex-direction: column; gap: 10px; }
         
-        /* Message Styling */
-        .msg { background: white; padding: 10px; border-radius: 10px; position: relative; max-width: 90%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .msg b { color: #128c7e; font-size: 0.8rem; display: block; }
-        .del-btn { color: #ff5e5e; cursor: pointer; float: right; margin-left: 10px; font-weight: bold; }
+        /* FIX: No more going out of bounds */
+        .msg { 
+            background: white; padding: 10px; border-radius: 10px; 
+            max-width: 85%; align-self: flex-start; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            word-wrap: break-word; /* Older browsers */
+            overflow-wrap: break-word; /* Modern browsers */
+            white-space: pre-wrap; 
+        }
         
-        /* Media Styling */
-        img { max-width: 100%; border-radius: 5px; margin-top: 5px; }
-        video { max-width: 100%; border-radius: 5px; }
-        iframe { width: 100%; height: 200px; border: none; border-radius: 5px; }
+        .msg b { color: #128c7e; font-size: 0.8rem; display: block; margin-bottom: 5px; }
+        .del-btn { color: #ff5e5e; cursor: pointer; float: right; font-size: 1.2rem; line-height: 1; }
+        
+        img, video { max-width: 100%; border-radius: 5px; margin-top: 10px; display: block; }
+        audio { width: 100%; margin-top: 10px; }
 
         .input-area { padding: 15px; background: #f0f0f0; display: flex; flex-direction: column; gap: 10px; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        .btn-group { display: flex; gap: 5px; }
-        button { flex: 1; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #sendBtn { background: #25d366; color: white; }
-        #clearBtn { background: #ff5e5e; color: white; flex: 0.3; }
+        .controls { display: flex; gap: 5px; align-items: center; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        
+        .icon-btn { background: #ddd; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-size: 1.2rem; }
+        #sendBtn { background: #25d366; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        #recordBtn.recording { background: #ff5e5e; color: white; animation: blink 1s infinite; }
+        
+        @keyframes blink { 50% { opacity: 0.5; } }
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
 
     <div id="chat-card">
         <header>
-            <span>Class Chat Pro</span>
-            <button id="clearBtn" onclick="clearChat()">Clear All</button>
+            <span>Pro Chat v3</span>
+            <button onclick="if(confirm('Clear all?')) firebase.database().ref('chats').remove();" style="background:none; border:1px solid white; color:white; cursor:pointer;">Clear</button>
         </header>
         <div id="messages"></div>
+        
         <div class="input-area">
-            <input type="text" id="username" placeholder="Your Name">
-            <input type="text" id="messageInput" placeholder="Message or Media Link (img, mp3, youtube)">
-            <button id="sendBtn">Send</button>
+            <input type="text" id="username" placeholder="Your Name" style="width: 100px;">
+            <div class="controls">
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button class="icon-btn" onclick="document.getElementById('fileInput').click()">📁</button>
+                <button class="icon-btn" id="recordBtn">🎤</button>
+                <input type="file" id="fileInput" accept="image/*,video/*,audio/*">
+            </div>
+            <button id="sendBtn">SEND</button>
         </div>
     </div>
 
@@ -48,79 +64,91 @@
 
     <script>
                 const firebaseConfig = {
-            apiKey: "AIzaSyChr_GE15lWWlcgTfqPKVfQTbKkhQjxkM4",
-            authDomain: "classchat-11a6a.firebaseapp.com",
+    apiKey: "AIzaSyChr_GE15lWWlcgTfqPKVfQTbKkhQjxkM4",
+    authDomain: "classchat-11a6a.firebaseapp.com",
   // THIS LINE BELOW IS THE MOST IMPORTANT ONE:
-            databaseURL: "https://classchat-11a6a-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "classchat-11a6a",
-            storageBucket: "classchat-11a6a.firebasestorage.app",
-            messagingSenderId: "888000836038",
-            appId: "1:888000836038:web:871885f36d337f1cd282c7",
-            measurementId: "G-RY8WWRMW4N"
+    databaseURL: "https://classchat-11a6a-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "classchat-11a6a",
+    storageBucket: "classchat-11a6a.firebasestorage.app",
+    messagingSenderId: "888000836038",
+    appId: "1:888000836038:web:871885f36d337f1cd282c7",
+    measurementId: "G-RY8WWRMW4N"
 };
-
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Notification Sound
-        const popSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+        const messagesDiv = document.getElementById('messages');
+        const recordBtn = document.getElementById('recordBtn');
+        let mediaRecorder;
+        let audioChunks = [];
 
-        function sendMessage() {
-            const name = document.getElementById('username').value;
-            const content = document.getElementById('messageInput').value;
-            if(name && content) {
-                db.ref("chats").push().set({ username: name, content: content });
-                document.getElementById('messageInput').value = "";
+        // --- SEND TEXT ---
+        function send(data) {
+            const name = document.getElementById('username').value || "Guest";
+            db.ref("chats").push().set({ username: name, ...data });
+        }
+
+        document.getElementById('sendBtn').onclick = () => {
+            const input = document.getElementById('messageInput');
+            if(input.value) { send({ text: input.value }); input.value = ""; }
+        };
+
+        // --- UPLOAD FILES (Images/Videos) ---
+        document.getElementById('fileInput').onchange = function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const type = file.type.split('/')[0]; // image, video, or audio
+                send({ [type]: event.target.result });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // --- RECORD AUDIO ---
+        recordBtn.onclick = async () => {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+                recordBtn.classList.remove('recording');
+                return;
             }
-        }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            recordBtn.classList.add('recording');
+            
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                const reader = new FileReader();
+                reader.onload = e => send({ audio: e.target.result });
+                reader.readAsDataURL(audioBlob);
+                audioChunks = [];
+            };
+        };
 
-        document.getElementById('sendBtn').onclick = sendMessage;
-
-        // Clear All Function
-        function clearChat() {
-            if(confirm("Delete ALL messages forever?")) {
-                db.ref("chats").remove();
-                location.reload();
-            }
-        }
-
-        // Delete Single Message Function
-        function deleteMsg(id) {
-            db.ref("chats/" + id).remove();
-            location.reload();
-        }
-
-        // The Smart Listener
+        // --- DISPLAY MESSAGES ---
         db.ref("chats").on("child_added", (snapshot) => {
             const data = snapshot.val();
             const id = snapshot.key;
-            const msgDiv = document.createElement('div');
-            msgDiv.className = "msg";
+            const msg = document.createElement('div');
+            msg.className = "msg";
             
-            let html = `<span class="del-btn" onclick="deleteMsg('${id}')">×</span>`;
-            html += `<b>${data.username}</b>`;
+            let content = `<span class="del-btn" onclick="firebase.database().ref('chats/${id}').remove(); location.reload();">×</span>`;
+            content += `<b>${data.username}</b>`;
+            
+            if(data.text) content += `<span>${data.text}</span>`;
+            if(data.image) content += `<img src="${data.image}">`;
+            if(data.video) content += `<video controls src="${data.video}"></video>`;
+            if(data.audio) content += `<audio controls src="${data.audio}"></audio>`;
 
-            // Detect Media Type
-            const link = data.content;
-            if (link.includes("youtube.com/watch?v=")) {
-                const vidId = link.split("v=")[1].split("&")[0];
-                html += `<iframe src="https://www.youtube.com/embed/${vidId}"></iframe>`;
-            } else if (link.match(/\.(jpeg|jpg|gif|png)$/) != null) {
-                html += `<img src="${link}">`;
-            } else if (link.match(/\.(mp3|wav|ogg)$/) != null) {
-                html += `<audio controls src="${link}"></audio>`;
-            } else if (link.match(/\.(mp4|webm)$/) != null) {
-                html += `<video controls src="${link}"></video>`;
-            } else {
-                html += `<span>${data.content}</span>`;
-            }
-
-            msgDiv.innerHTML = html;
-            document.getElementById('messages').appendChild(msgDiv);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-            popSound.play(); // Play sound for new messages
+            msg.innerHTML = content;
+            messagesDiv.appendChild(msg);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
+
+        // Auto-refresh on delete
+        db.ref("chats").on("child_removed", () => location.reload());
     </script>
 </body>
-</html>
+</html> 

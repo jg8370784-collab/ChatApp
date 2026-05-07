@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <h2>Class Chat</h2>
+        <div id="messages"></div>
+        <div class="input-area">
+            <input type="text" id="username" placeholder="Name">
+            <input type="text" id="messageInput" placeholder="Message...">
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // PASTE YOUR FIREBASE CONFIG HERE
+        const firebaseConfig = {
+        apiKey: "AIzaSyChr_GE15lWWlcgTfqPKVfQTbKkhQjxkM4",
+        authDomain: "classchat-11a6a.firebaseapp.com",
+        projectId: "classchat-11a6a",
+        storageBucket: "classchat-11a6a.firebasestorage.app",
+        messagingSenderId: "888000836038",
+        appId: "1:888000836038:web:871885f36d337f1cd282c7",
+        measurementId: "G-RY8WWRMW4N"
+      };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const sendBtn = document.getElementById('sendBtn');
+        const messageInput = document.getElementById('messageInput');
+        const userBox = document.getElementById('username');
+        const messagesDiv = document.getElementById('messages');
+
+        // Send Message
+        sendBtn.onclick = () => {
+            if(messageInput.value !== "" && userBox.value !== "") {
+                db.ref("messages").push().set({
+                    username: userBox.value,
+                    text: messageInput.value
+                });
+                messageInput.value = "";
+            }
+        };
+
+        // Listen for Messages
+        db.ref("messages").on("child_added", (snapshot) => {
+            const data = snapshot.val();
+            const msgEl = document.createElement('div');
+            msgEl.innerHTML = `<b>${data.username}:</b> ${data.text}`;
+            messagesDiv.appendChild(msgEl);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+    </script>
+</body>
+</html>

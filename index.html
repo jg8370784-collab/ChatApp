@@ -53,7 +53,7 @@
                 <button class="icon-btn" id="recordBtn">🎤</button>
                 <input type="file" id="fileInput" accept="image/*,video/*,audio/*">
             </div>
-            <div id="char-count">Characters: 0 / 500</div>
+            <div id="char-count">Characters: 0 / 1000</div>
             <button id="sendBtn">SEND</button>
         </div>
     </div>
@@ -83,16 +83,31 @@
         const recordBtn = document.getElementById('recordBtn');
         let mediaRecorder;
         let audioChunks = [];
+        let lastSentMessage = ""; // Spam prevention
 
-        // --- CHARACTER COUNTER ---
         messageInput.oninput = () => {
             const length = messageInput.value.length;
             charCountDisplay.innerText = `Characters: ${length} / 1000`;
-            charCountDisplay.style.color = length >= 500 ? "red" : "#666";
+            charCountDisplay.style.color = length >= 500 ? "orange" : "#666";
+            if(length >= 1000) charCountDisplay.style.color = "red";
         };
 
         function send(data) {
             const name = document.getElementById('username').value || "Guest";
+            
+            // 1. Spam Prevention (Checks if same as last message)
+            if (data.text && data.text === lastSentMessage) {
+                alert("Please don't spam the same message!");
+                return;
+            }
+
+            // 2. Character Guard (Auto-delete if over 500)
+            if (data.text && data.text.length > 500) {
+                alert("Auto-Mod: Message over 500 characters will be deleted.");
+                // We let it send then immediate delete is handled in the listener for extra safety
+            }
+
+            lastSentMessage = data.text || "";
             db.ref("chats").push().set({ username: name, ...data });
         }
 
@@ -136,10 +151,17 @@
             } catch (err) { alert("Mic denied!"); }
         };
 
-        // --- RENDER & SPECIFIC DELETE ---
         db.ref("chats").on("child_added", (snapshot) => {
             const data = snapshot.val();
             const id = snapshot.key;
+
+            // --- AUTO-DELETE LOGIC ---
+            // If text is over 500 characters, remove it from Firebase immediately
+            if (data.text && data.text.length > 500) {
+                db.ref("chats/" + id).remove();
+                return; // Don't show it on screen
+            }
+
             const msg = document.createElement('div');
             msg.className = "msg";
             msg.id = "msg-" + id;

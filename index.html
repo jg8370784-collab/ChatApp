@@ -3,17 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classroom Chat</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Class Chat Project</title>
+    <style>
+        /* CSS: Makes it look like a messaging app */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #chat-card { width: 100%; max-width: 400px; height: 600px; background: white; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
+        header { background: #075e54; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        .msg { background: white; padding: 8px 12px; border-radius: 8px; width: fit-content; max-width: 80%; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height: 1.4; }
+        .msg b { color: #128c7e; display: block; font-size: 0.8rem; margin-bottom: 2px; }
+        .input-area { padding: 15px; background: #f0f0f0; display: flex; flex-direction: column; gap: 8px; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+        button { padding: 12px; background: #25d366; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #128c7e; }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <h2>Class Chat</h2>
+
+    <div id="chat-card">
+        <header>Classroom Real-Time Chat</header>
         <div id="messages"></div>
         <div class="input-area">
-            <input type="text" id="username" placeholder="Name">
-            <input type="text" id="messageInput" placeholder="Message...">
-            <button id="sendBtn">Send</button>
+            <input type="text" id="username" placeholder="Your Name">
+            <input type="text" id="messageInput" placeholder="Type a message...">
+            <button id="sendBtn">Send Message</button>
         </div>
     </div>
 
@@ -21,16 +34,18 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-        // PASTE YOUR FIREBASE CONFIG HERE
+        // PASTE YOUR CONFIG FROM FIREBASE HERE
         const firebaseConfig = {
-        apiKey: "AIzaSyChr_GE15lWWlcgTfqPKVfQTbKkhQjxkM4",
-        authDomain: "classchat-11a6a.firebaseapp.com",
-        projectId: "classchat-11a6a",
-        storageBucket: "classchat-11a6a.firebasestorage.app",
-        messagingSenderId: "888000836038",
-        appId: "1:888000836038:web:871885f36d337f1cd282c7",
-        measurementId: "G-RY8WWRMW4N"
-      };
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com/", 
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -39,26 +54,41 @@
         const userBox = document.getElementById('username');
         const messagesDiv = document.getElementById('messages');
 
-        // Send Message
-        sendBtn.onclick = () => {
-            if(messageInput.value !== "" && userBox.value !== "") {
-                db.ref("messages").push().set({
-                    username: userBox.value,
-                    text: messageInput.value
-                });
-                messageInput.value = "";
-            }
-        };
+        // Function to send message to Firebase
+        function sendMessage() {
+            const name = userBox.value.trim();
+            const text = messageInput.value.trim();
 
-        // Listen for Messages
-        db.ref("messages").on("child_added", (snapshot) => {
+            if(name !== "" && text !== "") {
+                db.ref("chats").push().set({
+                    username: name,
+                    message: text
+                });
+                messageInput.value = ""; // Clear input
+            } else {
+                alert("Enter your name and a message!");
+            }
+        }
+
+        // Send when button is clicked
+        sendBtn.onclick = sendMessage;
+
+        // Send when Enter key is pressed
+        messageInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        // LISTEN FOR NEW MESSAGES
+        db.ref("chats").on("child_added", (snapshot) => {
             const data = snapshot.val();
             const msgEl = document.createElement('div');
-            msgEl.innerHTML = `<b>${data.username}:</b> ${data.text}`;
+            msgEl.classList.add('msg');
+            msgEl.innerHTML = `<b>${data.username}</b>${data.message}`;
             messagesDiv.appendChild(msgEl);
+            
+            // Auto-scroll to bottom
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
     </script>
 </body>
 </html>
- 

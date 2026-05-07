@@ -88,7 +88,7 @@
         messageInput.oninput = () => {
             const length = messageInput.value.length;
             charCountDisplay.innerText = `Characters: ${length} / 1000`;
-            charCountDisplay.style.color = length >= 1000 ? "red" : "#666";
+            charCountDisplay.style.color = length >= 500 ? "red" : "#666";
         };
 
         function send(data) {
